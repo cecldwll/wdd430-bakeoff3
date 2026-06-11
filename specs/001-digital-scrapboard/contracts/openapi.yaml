@@ -1,0 +1,640 @@
+﻿openapi: 3.1.0
+info:
+  title: Digital Scrapboard API
+  description: API contract for authentication, board management, notes, images, connection lines, and share links.
+  version: 0.1.0
+servers:
+  - url: http://localhost:5173
+paths:
+  /api/auth/signup:
+    post:
+      summary: Create a new user account and send verification email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User created, verification email sent
+  /api/auth/login:
+    post:
+      summary: Authenticate a user and establish session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+  /api/auth/verify-email:
+    post:
+      summary: Verify a user's email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified successfully
+  /api/auth/password-reset:
+    post:
+      summary: Send a password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset email sent
+  /api/auth/password-reset/confirm:
+    post:
+      summary: Confirm password reset using a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+  /api/scrapboards:
+    get:
+      summary: List authenticated user's scrapboards
+      responses:
+        '200':
+          description: Scrapboard list returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScrapboardSummary'
+    post:
+      summary: Create a new scrapboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScrapboardRequest'
+      responses:
+        '201':
+          description: Scrapboard created
+  /api/scrapboards/{id}:
+    get:
+      summary: Get scrapboard details and item state
+      parameters:
+        - $ref: '#/components/parameters/ScrapboardId'
+      responses:
+        '200':
+          description: Scrapboard retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapboardDetail'
+    patch:
+      summary: Update scrapboard metadata
+      parameters:
+        - $ref: '#/components/parameters/ScrapboardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateScrapboardRequest'
+      responses:
+        '200':
+          description: Scrapboard updated
+    delete:
+      summary: Soft delete a scrapboard
+      parameters:
+        - $ref: '#/components/parameters/ScrapboardId'
+      responses:
+        '204':
+          description: Scrapboard deleted
+  /api/scrapboards/{id}/share:
+    post:
+      summary: Enable sharing for a scrapboard and generate a public token
+      parameters:
+        - $ref: '#/components/parameters/ScrapboardId'
+      responses:
+        '200':
+          description: Share link generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareLinkResponse'
+    delete:
+      summary: Disable sharing for a scrapboard
+      parameters:
+        - $ref: '#/components/parameters/ScrapboardId'
+      responses:
+        '204':
+          description: Share disabled
+  /api/share/{token}:
+    get:
+      summary: Retrieve a publicly shared scrapboard by token
+      parameters:
+        - $ref: '#/components/parameters/ShareToken'
+      responses:
+        '200':
+          description: Public scrapboard retrieved in read-only mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrapboardDetail'
+  /api/notes:
+    post:
+      summary: Create a new note on a scrapboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      responses:
+        '201':
+          description: Note created
+  /api/notes/{id}:
+    patch:
+      summary: Update a note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNoteRequest'
+      responses:
+        '200':
+          description: Note updated
+    delete:
+      summary: Delete a note
+      parameters:
+        - $ref: '#/components/parameters/NoteId'
+      responses:
+        '204':
+          description: Note deleted
+  /api/images:
+    post:
+      summary: Upload or register an image asset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadImageRequest'
+      responses:
+        '201':
+          description: Image uploaded
+  /api/images/{id}:
+    patch:
+      summary: Update image metadata
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateImageRequest'
+      responses:
+        '200':
+          description: Image metadata updated
+    delete:
+      summary: Delete an image
+      parameters:
+        - $ref: '#/components/parameters/ImageId'
+      responses:
+        '204':
+          description: Image deleted
+  /api/lines:
+    post:
+      summary: Create a connection line between elements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLineRequest'
+      responses:
+        '201':
+          description: Line created
+  /api/lines/{id}:
+    patch:
+      summary: Update a connection line
+      parameters:
+        - $ref: '#/components/parameters/LineId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLineRequest'
+      responses:
+        '200':
+          description: Line updated
+    delete:
+      summary: Delete a connection line
+      parameters:
+        - $ref: '#/components/parameters/LineId'
+      responses:
+        '204':
+          description: Line deleted
+components:
+  parameters:
+    ScrapboardId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NoteId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImageId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LineId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShareToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    SignupRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          description: Strong password required for account security
+        username:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+    ScrapboardSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [private, shared]
+        share_token:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+    ScrapboardDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [private, shared]
+        share_token:
+          type: string
+          nullable: true
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/Line'
+        updated_at:
+          type: string
+          format: date-time
+    CreateScrapboardRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+    UpdateScrapboardRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [private, shared]
+    ShareLinkResponse:
+      type: object
+      properties:
+        share_url:
+          type: string
+          format: uri
+        share_token:
+          type: string
+    CreateNoteRequest:
+      type: object
+      required: [scrapboardId, type]
+      properties:
+        scrapboardId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [typed, handwritten]
+        content:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        backgroundTheme:
+          type: string
+          enum: [yellow_sticky, pink_sticky, kraft_paper, postcard, blue_sticky, scrap]
+        zOrder:
+          type: integer
+    UpdateNoteRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        backgroundTheme:
+          type: string
+          enum: [yellow_sticky, pink_sticky, kraft_paper, postcard, blue_sticky, scrap]
+        zOrder:
+          type: integer
+    UploadImageRequest:
+      type: object
+      required: [scrapboardId, file]
+      properties:
+        file:
+          type: string
+          format: binary
+        scrapboardId:
+          type: string
+          format: uuid
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        rotationDegrees:
+          type: number
+        zOrder:
+          type: integer
+    UpdateImageRequest:
+      type: object
+      properties:
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        rotationDegrees:
+          type: number
+        zOrder:
+          type: integer
+    CreateLineRequest:
+      type: object
+      required: [scrapboardId, fromElementId, fromElementType, toElementId, toElementType]
+      properties:
+        scrapboardId:
+          type: string
+          format: uuid
+        fromElementId:
+          type: string
+          format: uuid
+        fromElementType:
+          type: string
+          enum: [note, image]
+        toElementId:
+          type: string
+          format: uuid
+        toElementType:
+          type: string
+          enum: [note, image]
+        style:
+          type: string
+          enum: [solid, dashed]
+        color:
+          type: string
+        zOrder:
+          type: integer
+    UpdateLineRequest:
+      type: object
+      properties:
+        style:
+          type: string
+          enum: [solid, dashed]
+        color:
+          type: string
+        zOrder:
+          type: integer
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scrapboardId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [typed, handwritten]
+        content:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        backgroundTheme:
+          type: string
+          enum: [yellow_sticky, pink_sticky, kraft_paper, postcard, blue_sticky, scrap]
+        zOrder:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scrapboardId:
+          type: string
+          format: uuid
+        fileUrl:
+          type: string
+          format: uri
+        mimeType:
+          type: string
+        storagePath:
+          type: string
+        positionX:
+          type: number
+        positionY:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        rotationDegrees:
+          type: number
+        zOrder:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Line:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scrapboardId:
+          type: string
+          format: uuid
+        fromElementId:
+          type: string
+          format: uuid
+        fromElementType:
+          type: string
+          enum: [note, image]
+        toElementId:
+          type: string
+          format: uuid
+        toElementType:
+          type: string
+          enum: [note, image]
+        style:
+          type: string
+          enum: [solid, dashed]
+        color:
+          type: string
+        zOrder:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
