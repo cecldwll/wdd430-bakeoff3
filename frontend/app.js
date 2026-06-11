@@ -10,6 +10,8 @@ const clearBtn = document.getElementById('clear');
 let state = {notes:[],images:[],lines:[]};
 let drawMode = false; let lineFrom = null;
 let lastDeleted = null; // {type, item, timeoutId}
+let currentDrag = null; // track active drag across elements
+
 
 async function save(){
   try{
@@ -29,7 +31,7 @@ async function load(){
 
 function uid(prefix='id'){return prefix+Math.random().toString(36).slice(2,9)}
 
-function createNote(x=80,y=80,theme='yellow',text='New note'){const n={id:uid('n_'),x,y,w:180,h:120,theme,content:text};state.notes.push(n);save();}
+function createNote(x=80,y=80,theme='yellow',text='New note'){const rot = (Math.random()*12)-6; const n={id:uid('n_'),x,y,w:180,h:120,theme,content:text,rot};state.notes.push(n);save();}
 
 function createImage(dataUrl,x=100,y=100,w=200,h=140){const img={id:uid('i_'),x,y,w,h,url:dataUrl,rot:0};state.images.push(img);save();}
 
@@ -41,7 +43,7 @@ function render(){board.innerHTML=''; renderImages(); renderNotes(); renderLines
 
 function renderNotes(){
   state.notes.forEach(n=>{
-    const el=document.createElement('div'); el.className='note theme-'+n.theme; el.style.left=n.x+'px'; el.style.top=n.y+'px'; el.style.width=n.w+'px'; el.style.height=n.h+'px'; el.dataset.id=n.id;
+    const el=document.createElement('div'); el.className='note theme-'+n.theme; el.style.left=n.x+'px'; el.style.top=n.y+'px'; el.style.width=n.w+'px'; el.style.height=n.h+'px'; el.dataset.id=n.id; el.style.transform = `rotate(${n.rot||0}deg)`;
     const content=document.createElement('div'); content.className='content'; content.contentEditable=true; content.innerText=n.content;
     content.addEventListener('input',()=>{n.content=content.innerText; save();});
 
@@ -81,16 +83,38 @@ function renderImages(){
     makeDraggable(wrap,img,true);
 
     // resize
-    let resizing=false, lastX=0, lastY=0;
-    resize.addEventListener('pointerdown',e=>{ e.stopPropagation(); resizing=true; lastX=e.clientX; lastY=e.clientY; resize.setPointerCapture(e.pointerId); });
-    window.addEventListener('pointermove',e=>{ if(!resizing) return; const dx=e.clientX-lastX; const dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY; img.w = Math.max(40, img.w + dx); img.h = Math.max(40, img.h + dy); wrap.style.width=img.w+'px'; wrap.style.height=img.h+'px'; renderLines(); });
-    window.addEventListener('pointerup',e=>{ if(resizing){ resizing=false; try{ resize.releasePointerCapture(e.pointerId); }catch{} save(); }});
+    resize.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      let lastX = e.clientX, lastY = e.clientY;
+      const onMove = ev => {
+        const dx = ev.clientX - lastX; const dy = ev.clientY - lastY;
+        lastX = ev.clientX; lastY = ev.clientY;
+        img.w = Math.max(40, img.w + dx); img.h = Math.max(40, img.h + dy);
+        wrap.style.width = img.w + 'px'; wrap.style.height = img.h + 'px';
+        renderLines();
+      };
+      const onUp = ev => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        try{ resize.releasePointerCapture(ev.pointerId); }catch{}
+        save();
+      };
+      resize.setPointerCapture(e.pointerId);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
 
     // rotate
-    let rotating=false;
-    rotate.addEventListener('pointerdown',e=>{ e.stopPropagation(); rotating=true; rotate.setPointerCapture(e.pointerId);});
-    window.addEventListener('pointermove',e=>{ if(!rotating) return; const rect = wrap.getBoundingClientRect(); const cx = rect.left + rect.width/2; const cy = rect.top + rect.height/2; const ang = Math.atan2(e.clientY-cy, e.clientX-cx) * 180 / Math.PI; img.rot = ang; el.style.transform = `rotate(${img.rot}deg)`; renderLines(); });
-    window.addEventListener('pointerup',e=>{ if(rotating){ rotating=false; try{ rotate.releasePointerCapture(e.pointerId);}catch{} save(); }});
+    rotate.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const rect = wrap.getBoundingClientRect();
+      const cx = rect.left + rect.width/2; const cy = rect.top + rect.height/2;
+      const onMove = ev => { const ang = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI; img.rot = ang; el.style.transform = `rotate(${img.rot}deg)`; renderLines(); };
+      const onUp = ev => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); try{ rotate.releasePointerCapture(ev.pointerId);}catch{} save(); };
+      rotate.setPointerCapture(e.pointerId);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
 
     // draw-line click
     wrap.addEventListener('click',ev=>{ if(drawMode){ ev.stopPropagation(); if(!lineFrom){ lineFrom=img.id; wrap.classList.add('selected'); } else { createLine(lineFrom,img.id); document.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected')); lineFrom=null; } }});
@@ -112,6 +136,7 @@ function renderLines(){ // draw SVG lines between centers
     if((l.style||'solid') === 'dashed') line.setAttribute('stroke-dasharray','8 6');
     line.dataset.id = l.id;
     line.style.cursor = 'pointer';
+    line.setAttribute('pointer-events','auto');
     line.addEventListener('click',ev=>{ ev.stopPropagation(); deleteLineWithUndo(l.id); });
     linesLayer.appendChild(line);
   });
@@ -119,10 +144,35 @@ function renderLines(){ // draw SVG lines between centers
 
 function findElementById(id){ const n = state.notes.find(x=>x.id===id); if(n) return n; const i = state.images.find(x=>x.id===id); if(i) return i; return null; }
 
-function makeDraggable(el,obj,isImage){let ox=0,oy=0,dragging=false; el.addEventListener('pointerdown',e=>{if(e.target.classList.contains('resize-handle')||e.target.classList.contains('rotate-handle')||e.target.classList.contains('delete-btn')) return; el.setPointerCapture(e.pointerId); dragging=true; ox=e.clientX; oy=e.clientY; el.style.zIndex=1000;});
-  window.addEventListener('pointermove',e=>{ if(!dragging) return; const dx=e.clientX-ox; const dy=e.clientY-oy; ox=e.clientX; oy=e.clientY; obj.x += dx; obj.y += dy; el.style.left=obj.x+'px'; el.style.top=obj.y+'px'; renderLines(); });
-  window.addEventListener('pointerup',e=>{ if(dragging){ dragging=false; try{ el.releasePointerCapture(e.pointerId); }catch{} el.style.zIndex=''; save(); }});
+function makeDraggable(el,obj,isImage){
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.classList.contains('resize-handle')||e.target.classList.contains('rotate-handle')||e.target.classList.contains('delete-btn')|| e.target.classList.contains('content') || e.target.isContentEditable) return;
+    e.preventDefault();
+    const pid = e.pointerId;
+    currentDrag = {el,obj,isImage,lastX:e.clientX,lastY:e.clientY,pointerId:pid};
+    try{ el.setPointerCapture(pid); }catch{}
+    el.style.zIndex = 1000;
+  });
 }
+
+// Global handlers for drag to avoid accumulating event listeners
+window.addEventListener('pointermove', e=>{
+  if(!currentDrag) return;
+  const dx = e.clientX - currentDrag.lastX;
+  const dy = e.clientY - currentDrag.lastY;
+  currentDrag.lastX = e.clientX; currentDrag.lastY = e.clientY;
+  currentDrag.obj.x += dx; currentDrag.obj.y += dy;
+  currentDrag.el.style.left = currentDrag.obj.x + 'px';
+  currentDrag.el.style.top = currentDrag.obj.y + 'px';
+  renderLines();
+});
+window.addEventListener('pointerup', e=>{
+  if(!currentDrag) return;
+  try{ currentDrag.el.releasePointerCapture(currentDrag.pointerId); }catch{}
+  currentDrag.el.style.zIndex = '';
+  save();
+  currentDrag = null;
+});
 
 // Deletion with undo
 function deleteNoteWithUndo(id){ const idx = state.notes.findIndex(n=>n.id===id); if(idx===-1) return; const item = state.notes.splice(idx,1)[0]; save(); scheduleUndo({type:'note', item});}
