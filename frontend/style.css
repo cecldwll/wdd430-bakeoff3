@@ -1,14 +1,16 @@
 *{box-sizing:border-box}
-body{margin:0;background:#adb2d3;color:#594f3b;font-family:'Lora', Georgia, serif}
-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#9c7ca5;border-bottom:1px solid #776258}
-header h1{font-family:'Playfair Display', Georgia, serif;margin:0;font-size:22px;color:#594f3b}
+body{margin:0;background:#f7f5f2;color:#2b1f15;font-family:'Lora', Georgia, serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#896279;border-bottom:3px solid #594f3b}
+header h1{font-family:'Playfair Display', Georgia, serif;margin:0;font-size:22px;color:#ffffff}
 .toolbar{display:flex;gap:8px;align-items:center}
-.toolbar button,.toolbar select,.toolbar .filebtn{padding:8px 10px;border-radius:8px;border:1px solid #594f3b;background:#776258;color:#adb2d3;cursor:pointer;font-family:inherit}
+.toolbar button,.toolbar select,.toolbar .filebtn{padding:10px 12px;border-radius:10px;border:2px solid #594f3b;background:#594f3b;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(0,0,0,0.15)}
+.toolbar button:focus,.toolbar select:focus,.filebtn:focus{outline:3px solid rgba(156,124,165,0.35);outline-offset:2px}
 main{height:calc(100vh - 72px);position:relative}
 #board{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;background:linear-gradient(180deg,#fff 0%,#f7f5f2 100%)}
 .note{position:absolute;min-width:140px;min-height:80px;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.12);cursor:grab;user-select:none;transform-origin:center;z-index:30}
 .note:active{cursor:grabbing}
 .note .content{outline:none;white-space:pre-wrap;font-family:'Lora', Georgia, serif;font-size:14px}
+.note .content:focus{outline:3px solid rgba(156,124,165,0.35);outline-offset:3px}
 .theme-yellow{background:#594f3b;border:1px solid #776258;color:#adb2d3}
 .theme-pink{background:#776258;border:1px solid #594f3b;color:#adb2d3}
 .theme-kraft{background:#896279;border:1px solid #776258;color:#adb2d3}

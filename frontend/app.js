@@ -14,11 +14,7 @@ let currentDrag = null; // track active drag across elements
 
 
 async function save(){
-  try{
-    await fetch('/api/board',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});
-  }catch(e){
-    localStorage.setItem('scrapboard.v1',JSON.stringify(state));
-  }
+  await persistStateImmediate();
   render();
 }
 async function load(){
@@ -27,6 +23,19 @@ async function load(){
     if(res.ok){ state = await res.json(); }
     else { const raw=localStorage.getItem('scrapboard.v1'); if(raw) state=JSON.parse(raw); }
   }catch(e){ const raw=localStorage.getItem('scrapboard.v1'); if(raw) state=JSON.parse(raw); }
+}
+
+let persistTimeout = null;
+async function persistStateImmediate(){
+  try{
+    await fetch('/api/board',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});
+  }catch(e){
+    localStorage.setItem('scrapboard.v1',JSON.stringify(state));
+  }
+}
+function schedulePersist(delay=800){
+  if(persistTimeout) clearTimeout(persistTimeout);
+  persistTimeout = setTimeout(()=>{ persistStateImmediate(); persistTimeout=null; }, delay);
 }
 
 function uid(prefix='id'){return prefix+Math.random().toString(36).slice(2,9)}
@@ -45,7 +54,7 @@ function renderNotes(){
   state.notes.forEach(n=>{
     const el=document.createElement('div'); el.className='note theme-'+n.theme; el.style.left=n.x+'px'; el.style.top=n.y+'px'; el.style.width=n.w+'px'; el.style.height=n.h+'px'; el.dataset.id=n.id; el.style.transform = `rotate(${n.rot||0}deg)`;
     const content=document.createElement('div'); content.className='content'; content.contentEditable=true; content.innerText=n.content;
-    content.addEventListener('input',()=>{n.content=content.innerText; save();});
+    content.addEventListener('input',()=>{ n.content = content.innerText; schedulePersist(); });
 
     const del=document.createElement('button'); del.className='delete-btn'; del.title='Delete note'; del.innerText='✕';
     del.addEventListener('click',ev=>{ev.stopPropagation(); deleteNoteWithUndo(n.id);});
