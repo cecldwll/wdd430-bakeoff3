@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Digital Scrapboard - MVP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Digital Scrapboard (MVP)</h1>
+    <div class="toolbar">
+      <button id="addNote">Add Note</button>
+      <label class="filebtn">Add Image<input id="imageInput" type="file" accept="image/*" style="display:none"></label>
+      <button id="toggleLine">Draw Line</button>
+      <select id="themeSelect">
+        <option value="yellow">Yellow Sticky</option>
+        <option value="pink">Pink Sticky</option>
+        <option value="kraft">Kraft Paper</option>
+        <option value="postcard">Postcard</option>
+        <option value="blue">Blue Sticky</option>
+        <option value="scrap">Scrap</option>
+      </select>
+      <button id="clear">Clear Board</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="board" tabindex="0"></div>
+    <svg id="linesLayer" class="lines" preserveAspectRatio="none"></svg>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
